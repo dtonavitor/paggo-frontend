@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowRightIcon } from '@heroicons/react/24/outline';
 

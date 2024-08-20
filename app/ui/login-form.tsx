@@ -9,28 +9,26 @@ import { ArrowRightIcon } from '@heroicons/react/20/solid';
 import { Button } from './button';
 import { useFormState } from 'react-dom';
 import Link from 'next/link';
-import { authenticate, getUser, UserState } from '../lib/actions';
+import { getUser, UserState } from '../lib/actions';
 import { useEffect } from 'react';
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
-import { cookies } from 'next/headers';
+import { useCookies } from 'next-client-cookies';
 
 interface SignUpFormProps {
   router: AppRouterInstance;
 }
 
 export default function LoginForm({ router }: SignUpFormProps) {
+  const cookies = useCookies();
   const initialState: UserState = { message: null, errors: {}};
   const [state, formAction] = useFormState(getUser, initialState);
 
   useEffect(() => {
     if (state.success && state.data) {
-      console.log(state.data)
-      cookies().set('access_token', state.data.accessToken, { expires: new Date(0) });
-      // setTimeout(() => {
-      //   router.push('/home');
-      // }, 2000);
+      cookies.set('access_token', state.data.accessToken);
+      router.push('/home');
     }
-  }, [state.success, router, state.data]);
+  }, [state.success, router, state.data, cookies]);
 
   return (
     <form action={formAction} className="space-y-3">

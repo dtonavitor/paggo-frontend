@@ -5,16 +5,16 @@ import {
   KeyIcon,
   ExclamationCircleIcon,
   CheckCircleIcon,
+  ArrowLeftIcon,
 } from '@heroicons/react/24/outline';
 import { ArrowRightIcon } from '@heroicons/react/20/solid';
 import { Button } from './button';
 import { useFormState } from 'react-dom';
 import { createUser } from '../lib/actions';
 import { UserState } from '../lib/actions';
-import { redirect } from "next/navigation";
 import { useEffect } from 'react';
-import { NextRouter, useRouter } from 'next/router';
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
+import Link from 'next/link';
 
 interface SignUpFormProps {
   router: AppRouterInstance;
@@ -26,7 +26,6 @@ export default function LoginForm({ router }: SignUpFormProps ) {
   
   useEffect(() => {
     if (state.success) {
-      //create cookie with token
       setTimeout(() => {
         router.push('/home');
       }, 2000);
@@ -35,14 +34,19 @@ export default function LoginForm({ router }: SignUpFormProps ) {
 
   return (
     <form action={formAction} className="space-y-3">
-      <div className="flex-1 rounded-lg bg-gray-50 px-6 pb-4 pt-8">
-        <h1 className='mb-3 text-2xl'>
-          Cadastre-se
-        </h1>
+      <div className="flex-1 flex-row rounded-lg bg-gray-50 px-6 pb-4 pt-8">
+        <div className="flex gap-1">  
+          <Link href="/login">
+            <ArrowLeftIcon className="h-8 w-8 text-black cursor-pointer" />
+          </Link>
+          <h1 className='mb-3 text-2xl'>
+            Cadastre-se
+          </h1>
+        </div>
         <div className="w-full">
           <div>
             <label
-              className="mb-3 mt-5 block text-xs font-medium text-gray-900"
+              className="mb-3 mt-3 block text-xs font-medium text-gray-900"
               htmlFor="email"
             >
               Email

@@ -1,11 +1,9 @@
 'use server'
 
 import { z } from "zod";
-import { AuthError } from 'next-auth';
-import { signIn } from '@/auth';
 import * as dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
-import { NextApiRequest, NextApiResponse } from "next";
+import { cookies } from "next/headers";
 
 dotenv.config();
 
@@ -18,7 +16,8 @@ export type UserState = {
   message?: string | null;
   success?: boolean;
   data?: {
-    accessToken: string;
+    accessToken?: string | null;
+    text?: string[] | null;
   };
 };
 
@@ -76,23 +75,22 @@ export async function createUser(prevState: UserState, formData: FormData) {
   }
 }
 
-export async function getPayload() {
-    const token = document.cookie.split('access_token=')[1].split(';')[0];
+export async function getUser(prevState: UserState, formData: FormData) {
+  const validatedFields = FormSchema.safeParse({
+    email: formData.get('email'),
+    password: formData.get('password'),
+  });
 
-    const decoded = jwt.decode(token);
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: null,
+      success: false,
+    };
+  }
 
-    const payload = {
-      id: decoded?.sub,
-      email: decoded?.email,
-      accessToken: token,
-    }
-
-    console.log(payload);
-
-    return payload;
-}
-
-export async function getUser(email: string, password: string) {
+  const { email, password } = validatedFields.data;
+  
   try {
     const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}signin`, {
       method: 'POST',
@@ -103,12 +101,15 @@ export async function getUser(email: string, password: string) {
     });
 
     const responseData =  await response.json();
-    console.log(responseData);
 
     if (!responseData.access_token) {
-      throw new AuthError('CredentialsSignin', {
+      return {
         message: 'Email ou senha incorretos.',
-      });
+        errors: {
+          backend: ['Email ou senha incorretos.'],
+        },
+        success: false,
+      };
     }
     
     return {
@@ -132,35 +133,96 @@ export async function getUser(email: string, password: string) {
   }
 }
 
+function getPayload() {
+  const token = cookies().get('access_token');
+  
+  if (!token) {
+    return null;
+  }
+  
+  const decoded = jwt.decode(token.value);
+
+  const payload = {
+    id: decoded?.sub,
+    email: decoded?.email,
+    accessToken: token,
+  }
+
+  return payload;
+}
+
+async function convertFileToBase64(file: File): Promise<string> {
+  const buffer = Buffer.from(await file.arrayBuffer());
+  
+  // Convert the buffer to a Base64 string
+  return buffer.toString('base64');
+}
+
 export async function createOcr(prevState: string | undefined, formData: FormData) {
+  const payload = getPayload();
+
+  if (!payload) {
+    return {
+      message: 'Usuário não autenticado.',
+      errors: {
+        backend: ['Usuário não autenticado.'],
+      },
+      success: false,
+    }
+  }
+
+  const file = formData.get('file');
+
+  if (!file || !(file instanceof File) || file.size === 0) {
+    return {
+      message: 'Nenhum arquivo enviado.',
+      errors: {
+        backend: ['Nenhum arquivo enviado.'],
+      },
+      success: false,
+    };
+  }
+
+  // Convert the file to a base64 string
+  const base64String = await convertFileToBase64(file);
+
   try {
     const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}ocr`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${document.cookie.split('access_token=')[1].split(';')[0]}`,
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${cookies().get('access_token')?.value}`,
       },
-      body: formData,
+      body: JSON.stringify({ image: base64String, userId: payload.id }),
     });
-  } catch (error) {
-    console.error(error);
-  }
-}
 
-export async function authenticate(
-  prevState: string | undefined,
-  formData: FormData,
-) {
-  try {
-    await signIn('credentials', formData);
-  } catch (error) {
-    if (error instanceof AuthError) {
-      switch (error.type) {
-        case 'CredentialsSignin':
-          return 'Email ou senha incorretos.';
-        default:
-          return 'Algo deu errado.';
-      }
+    const responseData = await response.json();
+
+    if (!responseData.text) {
+      return {
+        message: 'Falha ao criar OCR.',
+        errors: {
+          backend: ['Falha ao criar OCR.'],
+        },
+        success: false,
+      };
     }
-    throw error;
+    return {
+      message: 'OCR criado com sucesso!',
+      errors: {},
+      success: true,
+      data: {
+        text: responseData.text.split('\n'),
+        image: responseData.image,
+      }
+    };
+  } catch (error) {
+    return {
+      message: 'Falha ao criar OCR.',
+      errors: {
+        backend: [error],
+      },
+      success: false,
+    };
   }
 }

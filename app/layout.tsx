@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { SessionProvider } from "next-auth/react";
-import { authConfig } from "@/auth.config";
+import { CookiesProvider } from 'next-client-cookies/server';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -19,9 +18,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <SessionProvider options={authConfig}>
+        <CookiesProvider>
           {children}
-        </SessionProvider>
+        </CookiesProvider>
       </body>
     </html>
   );
