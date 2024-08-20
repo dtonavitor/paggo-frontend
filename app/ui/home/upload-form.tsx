@@ -7,7 +7,7 @@ import { useFormState } from "react-dom";
 import { ExclamationCircleIcon } from "@heroicons/react/24/outline";
 import SpinnerLoading from "../spinner";
 
-export default function UploadForm({ setOcrText, setImageSrc }) {
+export default function UploadForm({ setOcrText, setImageSrc }: { setOcrText: (text: string[]) => void, setImageSrc: (src: string) => void }) {
   const [imageSrc, setImageSrcLocal] = useState<string | null>(null);
   const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
   const initialState = { message: null, errors: {} };
@@ -18,8 +18,8 @@ export default function UploadForm({ setOcrText, setImageSrc }) {
     setIsLoading(true);
   }
 
-  const handleImageUpload = (e: { target: { files: any[]; }; }) => {
-    const file = e.target.files[0];
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
     if (file) {
       const reader = new FileReader();
       reader.onload = () => {
@@ -91,7 +91,7 @@ export default function UploadForm({ setOcrText, setImageSrc }) {
         </button>
       )}
       <div className="flex h-8 items-end space-x-1">
-          {(state && Object.keys(state.errors).length > 0) && (
+          {(state && Object.keys(state.errors || {}).length > 0) && (
               <>
                 <ExclamationCircleIcon className="h-5 w-5 text-red-500" />
                 <p className="text-sm text-red-500">{state.message}</p>

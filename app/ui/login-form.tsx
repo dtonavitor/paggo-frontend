@@ -35,12 +35,12 @@ export default function LoginForm({ router }: SignUpFormProps) {
       setIsLoading(false);
     }
     
-    if (state.success && state.data) {
+    if (state.success && state.data && state.data.accessToken) {
       setIsLoading(false);
       cookies.set('access_token', state.data.accessToken);
       router.push('/home');
     }
-  }, [state.success, router, state.data, cookies]);
+  }, [state.success, router, state.data, cookies, state.errors]);
 
   return (
     <form action={formAction} className="space-y-3">
@@ -99,7 +99,7 @@ export default function LoginForm({ router }: SignUpFormProps) {
           </Button>
         )}
         <div className="flex h-8 items-end space-x-1">
-          {Object.keys(state.errors).length > 0 && (
+          {Object.keys(state.errors || {}).length > 0 && (
               <>
                 <ExclamationCircleIcon className="h-5 w-5 text-red-500" />
                 <p className="text-sm text-red-500">{state.message}</p>

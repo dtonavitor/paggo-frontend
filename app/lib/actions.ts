@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import * as dotenv from 'dotenv';
-import jwt from 'jsonwebtoken';
+import jwt, { JwtPayload } from 'jsonwebtoken';
 import { cookies } from "next/headers";
 
 dotenv.config();
@@ -18,6 +18,7 @@ export type UserState = {
   data?: {
     accessToken?: string | null;
     text?: string[] | null;
+    image?: string | null;
   };
 };
 
@@ -32,7 +33,7 @@ const FormSchema = z.object({
   }).min(6, {message: 'A senha deve ter no mínimo 6 caracteres.'}),
 });
 
-export async function createUser(prevState: UserState, formData: FormData) {
+export async function createUser(state: UserState, formData: FormData): Promise<UserState> {
   const validatedFields = FormSchema.safeParse({
     email: formData.get('email'),
     password: formData.get('password'),
@@ -40,6 +41,7 @@ export async function createUser(prevState: UserState, formData: FormData) {
 
   if (!validatedFields.success) {
     return {
+      ...state,
       errors: validatedFields.error.flatten().fieldErrors,
       message: null,
       success: false,
@@ -60,22 +62,24 @@ export async function createUser(prevState: UserState, formData: FormData) {
     const responseData = await response.json();
 
     return {
+      ...state,
       message: 'Usuário criado com sucesso!',
       errors: {},
       success: true, 
     };
   } catch (error) {
     return {
+      ...state,
       message: 'Falha ao criar usuário.',
       errors: {
-        backend: [error],
+        backend: ['Falha ao criar usuário.'],
       },
       success: false,
     };
   }
 }
 
-export async function getUser(prevState: UserState, formData: FormData) {
+export async function getUser(state: UserState, formData: FormData): Promise<UserState> {
   const validatedFields = FormSchema.safeParse({
     email: formData.get('email'),
     password: formData.get('password'),
@@ -83,6 +87,7 @@ export async function getUser(prevState: UserState, formData: FormData) {
 
   if (!validatedFields.success) {
     return {
+      ...state,
       errors: validatedFields.error.flatten().fieldErrors,
       message: null,
       success: false,
@@ -104,6 +109,7 @@ export async function getUser(prevState: UserState, formData: FormData) {
 
     if (!responseData.access_token) {
       return {
+        ...state,
         message: 'Email ou senha incorretos.',
         errors: {
           backend: ['Email ou senha incorretos.'],
@@ -113,6 +119,7 @@ export async function getUser(prevState: UserState, formData: FormData) {
     }
     
     return {
+      ...state,
       message: 'Login realizado com sucesso!',
       errors: {},
       success: true,
@@ -124,9 +131,10 @@ export async function getUser(prevState: UserState, formData: FormData) {
   } catch (error) {
     console.error(error)
     return {
+      ...state,
       message: 'Falha ao realizar login.',
       errors: {
-        backend: [error],
+        backend: ['Falha ao realizar login.'],
       },
       success: false,
     };
@@ -140,8 +148,8 @@ function getPayload() {
     return null;
   }
   
-  const decoded = jwt.decode(token.value);
-
+  const decoded = jwt.decode(token.value) as JwtPayload;
+  
   const payload = {
     id: decoded?.sub,
     email: decoded?.email,
@@ -158,11 +166,12 @@ async function convertFileToBase64(file: File): Promise<string> {
   return buffer.toString('base64');
 }
 
-export async function createOcr(prevState: string | undefined, formData: FormData) {
+export async function createOcr(state: UserState | undefined, formData: FormData): Promise<UserState> {
   const payload = getPayload();
 
   if (!payload) {
     return {
+      ...state,
       message: 'Usuário não autenticado.',
       errors: {
         backend: ['Usuário não autenticado.'],
@@ -175,6 +184,7 @@ export async function createOcr(prevState: string | undefined, formData: FormDat
 
   if (!file || !(file instanceof File) || file.size === 0) {
     return {
+      ...state,
       message: 'Nenhum arquivo enviado.',
       errors: {
         backend: ['Nenhum arquivo enviado.'],
@@ -200,6 +210,7 @@ export async function createOcr(prevState: string | undefined, formData: FormDat
 
     if (!responseData.text) {
       return {
+        ...state,
         message: 'Falha ao criar OCR.',
         errors: {
           backend: ['Falha ao criar OCR.'],
@@ -208,6 +219,7 @@ export async function createOcr(prevState: string | undefined, formData: FormDat
       };
     }
     return {
+      ...state,
       message: 'OCR criado com sucesso!',
       errors: {},
       success: true,
@@ -220,7 +232,7 @@ export async function createOcr(prevState: string | undefined, formData: FormDat
     return {
       message: 'Falha ao criar OCR.',
       errors: {
-        backend: [error],
+        backend: ['Falha ao criar OCR.'],
       },
       success: false,
     };

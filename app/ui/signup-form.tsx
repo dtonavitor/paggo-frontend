@@ -40,7 +40,7 @@ export default function LoginForm({ router }: SignUpFormProps ) {
         router.push('/home');
       }, 2000);
     }
-  }, [state.success, router]);
+  }, [state.success, router, state.errors]);
 
   return (
     <form action={formAction} className="space-y-3">
@@ -72,7 +72,7 @@ export default function LoginForm({ router }: SignUpFormProps ) {
               <AtSymbolIcon className="pointer-events-none absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-gray-500 peer-focus:text-gray-900" />
             </div>
             <div id="email-error" aria-live="polite" aria-atomic="true">
-              {state.errors?.email &&
+              {state.errors && 'email' in state.errors && state.errors.email &&
                 state.errors.email.map((error: string) => (
                   <p className="mt-2 text-sm text-red-500" key={error}>
                     {error}
@@ -101,7 +101,7 @@ export default function LoginForm({ router }: SignUpFormProps ) {
           </div>
           <div id="password-error" aria-live="polite" aria-atomic="true">
             {state.errors?.password && 
-              state.errors.password.map((error: string) => (
+              state.errors?.password?.map((error: string) => (
                 <p className="mt-2 text-sm text-red-500" key={error}>
                   {error}
                 </p>
@@ -120,7 +120,7 @@ export default function LoginForm({ router }: SignUpFormProps ) {
         <div className="flex h-8 items-end space-x-1">
           {state.message && (
             <>
-              {Object.keys(state.errors).length > 0 ? (
+              {Object.keys(state.errors || {}).length > 0 ? (
                 <>
                   <ExclamationCircleIcon className="h-5 w-5 text-red-500" />
                   <p className="text-sm text-red-500">{state.message}</p>
