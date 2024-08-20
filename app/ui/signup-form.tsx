@@ -12,9 +12,10 @@ import { Button } from './button';
 import { useFormState } from 'react-dom';
 import { createUser } from '../lib/actions';
 import { UserState } from '../lib/actions';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 import Link from 'next/link';
+import SpinnerLoading from './spinner';
 
 interface SignUpFormProps {
   router: AppRouterInstance;
@@ -23,9 +24,18 @@ interface SignUpFormProps {
 export default function LoginForm({ router }: SignUpFormProps ) {
   const initialState: UserState = { message: null, errors: {}};
   const [state, formAction] = useFormState(createUser, initialState);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleLoading = () => {
+    setIsLoading(true);
+  }
   
   useEffect(() => {
+    if (state.errors) {
+      setIsLoading(false);
+    }
     if (state.success) {
+      setIsLoading(false);
       setTimeout(() => {
         router.push('/home');
       }, 2000);
@@ -98,9 +108,15 @@ export default function LoginForm({ router }: SignUpFormProps ) {
               ))}
           </div>
         </div>
-        <Button className="mt-4 w-full" type="submit">
+        {!isLoading ? (
+        <Button className="mt-4 w-full" type="submit" onClick={handleLoading}>
           Cadastrar <ArrowRightIcon className="ml-auto h-5 w-5 text-gray-50" />
         </Button>
+        ) : (
+          <Button className="flex justify-center items-center mt-4 w-full">
+            <SpinnerLoading />
+          </Button>
+        )}
         <div className="flex h-8 items-end space-x-1">
           {state.message && (
             <>

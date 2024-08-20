@@ -1,16 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { createOcr } from "@/app/lib/actions";
 import { useFormState } from "react-dom";
 import { ExclamationCircleIcon } from "@heroicons/react/24/outline";
+import SpinnerLoading from "../spinner";
 
 export default function UploadForm({ setOcrText, setImageSrc }) {
   const [imageSrc, setImageSrcLocal] = useState<string | null>(null);
   const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
   const initialState = { message: null, errors: {} };
   const [state, formAction] = useFormState(createOcr, initialState);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleLoading = () => {
+    setIsLoading(true);
+  }
 
   const handleImageUpload = (e: { target: { files: any[]; }; }) => {
     const file = e.target.files[0];
@@ -29,9 +35,15 @@ export default function UploadForm({ setOcrText, setImageSrc }) {
     }
   };
 
-  if (state.success && state.data?.text) {
-    setOcrText(state.data.text);
-  }
+  useEffect(() => {
+    if (state.errors) {
+      setIsLoading(false);
+    }
+    if (state.success && state.data?.text) {
+      setIsLoading(false);
+      setOcrText(state.data.text);
+    }
+  }, [state.success, state.data?.text, state.errors, setOcrText]);
 
   return (
     <form action={formAction} className="flex flex-col gap-4 mt-10">
@@ -63,12 +75,21 @@ export default function UploadForm({ setOcrText, setImageSrc }) {
           />
         </div>
       )}
-      <button
-        type="submit"
-        className="w-32 flex items-center justify-center gap-2 rounded-md bg-black p-2 text-sm text-white font-medium hover:bg-gray-600 hover:text-white"
-      >
-        Enviar
-      </button>
+      {!isLoading ? (
+        <button
+          type="submit"
+          onClick={handleLoading}
+          className="w-32 flex items-center justify-center gap-2 rounded-md bg-black p-2 text-sm text-white font-medium hover:bg-gray-600 hover:text-white"
+        >
+          Enviar
+        </button>
+      ) : (
+        <button
+          className="w-32 flex items-center justify-center gap-2 rounded-md bg-black p-2 text-sm text-white font-medium hover:bg-gray-600 hover:text-white"
+        >
+          <SpinnerLoading />
+        </button>
+      )}
       <div className="flex h-8 items-end space-x-1">
           {(state && Object.keys(state.errors).length > 0) && (
               <>

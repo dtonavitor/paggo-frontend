@@ -10,9 +10,10 @@ import { Button } from './button';
 import { useFormState } from 'react-dom';
 import Link from 'next/link';
 import { getUser, UserState } from '../lib/actions';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 import { useCookies } from 'next-client-cookies';
+import SpinnerLoading from './spinner';
 
 interface SignUpFormProps {
   router: AppRouterInstance;
@@ -22,9 +23,20 @@ export default function LoginForm({ router }: SignUpFormProps) {
   const cookies = useCookies();
   const initialState: UserState = { message: null, errors: {}};
   const [state, formAction] = useFormState(getUser, initialState);
+  const [isLoading, setIsLoading] = useState(false);
 
+  
+  const handleLoading = () => {
+    setIsLoading(true);
+  }
+  
   useEffect(() => {
+    if (state.errors) {
+      setIsLoading(false);
+    }
+    
     if (state.success && state.data) {
+      setIsLoading(false);
       cookies.set('access_token', state.data.accessToken);
       router.push('/home');
     }
@@ -77,9 +89,15 @@ export default function LoginForm({ router }: SignUpFormProps) {
             </div>
           </div>
         </div>
-        <Button className="mt-4 w-full">
-          Log in <ArrowRightIcon className="ml-auto h-5 w-5 text-gray-50" />
-        </Button>
+        {!isLoading ? (
+          <Button className="mt-4 w-full" onClick={handleLoading}>
+              Log in <ArrowRightIcon className="ml-auto h-5 w-5 text-gray-50" />
+          </Button>
+          ) : ( 
+            <Button className="flex justify-center items-center mt-4 w-full">
+              <SpinnerLoading />
+          </Button>
+        )}
         <div className="flex h-8 items-end space-x-1">
           {Object.keys(state.errors).length > 0 && (
               <>
